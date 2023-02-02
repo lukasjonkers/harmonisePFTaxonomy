@@ -264,7 +264,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
                                                TRUE ~ harmonised_name))
         }
         
-        ##### sort trilobus #####
+        #### sort trilobus #####
         # ask to rename to Trilobatus sacculifer
         if('Trilobatus trilobus' %in% Meta$valid_name[Meta$include]){
           Meta %>%
@@ -278,6 +278,9 @@ harmonisePANGAEA <- function(url, tol = 0.02){
                                                  TRUE ~ harmonised_name))
           }
         }
+        
+        #### ask to rename menardii to cultrata following B&K2022 #####
+        
         
         # add aphiaID of harmonised name
         # cannot use WoRMS functions as some species contain multiple subspecies or variants
@@ -300,7 +303,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           checkPercent <- pFile$data[, Meta$include & Meta$Unit == '%']
           sums <- rowSums(checkPercent)
           nFalse <- sum(!sums >= 100- tolerancePercent & sums <= 100 + tolerancePercent)
-          paste0(nFalse, ' samples out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem to deviate from 100 % by more than 0.5 %.')
+          paste0(nFalse, ' samples out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
         } else {
           'Units are not %%, cannot check.'
         }
