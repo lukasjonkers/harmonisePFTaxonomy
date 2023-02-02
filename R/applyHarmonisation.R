@@ -1,6 +1,7 @@
 # attempt at species harmonisation of PANGAEA files
 library(tidyverse)
 library(googlesheets4)
+library(mregions)
 
 
 # load the list with synonyms
@@ -20,9 +21,9 @@ synonyms <- synsRaw %>%
 # valid extant planktonic foraminifera taxa
 extantForams <- range_read('https://docs.google.com/spreadsheets/d/1LSfU9WCZF22zMczZJUcS3ycVOpub8qS15TJtqMyIV8o/edit#gid=1394131465', sheet = 'extForam')
 
-# load the ocean shape file to assign site to ocean basin
+# load the Global Oceans and Seas shape file to assign site to ocean basin
 # citation Flanders Marine Institute (2021). Global Oceans and Seas, version 1. Available online at https://www.marineregions.org/. https://doi.org/10.14284/542.
-GOAS <- sf::st_read('goas_v01.shp')
+GOAS <- mr_shp(key = "MarineRegions:goas", maxFeatures = 25)
 
 # turn off spherical projections
 sf::sf_use_s2(FALSE)
