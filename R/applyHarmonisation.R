@@ -28,7 +28,7 @@ GOAS <- sf::st_read('goas_v01.shp')
 sf::sf_use_s2(FALSE)
 
 # urls with data to work with
-urls <- read_csv('_https_doi_pangaea_ds_id_dataset_text.csv', col_names = 'url')
+urls <- read_csv('data/_https_doi_pangaea_ds_id_dataset_text.csv', col_names = 'url')
 
 
 # example with duplicate names
