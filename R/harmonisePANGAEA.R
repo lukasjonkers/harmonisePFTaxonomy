@@ -280,7 +280,14 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         }
         
         #### ask to rename menardii to cultrata following B&K2022 #####
-        
+        if('Globorotalia menardii' %in% Meta$valid_name[Meta$include]){
+          renameMenardii <- menu(c('Yes', 'No'), title = 'Do you want to rename Globorotalia menardii to Globorotalia cultrata to be consistent with Brummer and Kucera 2022?')
+          if(renameMenardii == 1){
+            Meta <- Meta %>%
+              mutate(harmonised_name = case_when(include & valid_name == 'Globorotalia menardii' ~ 'Globorotalia cultrata',
+                                                 TRUE ~ harmonised_name))
+          }
+        }
         
         # add aphiaID of harmonised name
         # cannot use WoRMS functions as some species contain multiple subspecies or variants
