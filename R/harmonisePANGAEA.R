@@ -171,13 +171,13 @@ harmonisePANGAEA <- function(url, tol = 0.02){
             if('Globigerinoides elongatus' %in% Meta$valid_name[Meta$include]){
               Meta <- Meta %>%
                 mutate(harmonised_name = case_when(include & valid_name == 'Globigerinoides ruber' ~ 'Globigerinoides ruber subsp. albus',
-                                                   include & valid_name == 'Globigerinoides ruber subsp. ruber' ~ 'Mistake?',
+                                                   include & valid_name == 'Globigerinoides ruber subsp. ruber' ~ 'Globigerinoides ruber subsp. ruber',
                                                    TRUE ~ harmonised_name))
             } else {
               Meta <- Meta %>%
                 mutate(harmonised_name = case_when(include & valid_name == 'Globigerinoides ruber' ~ 'Globigerinoides ruber subsp. albus + Globigerinoides elongatus',
                                                    include & valid_name == 'Globigerinoides ruber subsp. albus' ~ 'Globigerinoides ruber subsp. albus + Globigerinoides elongatus',
-                                                   include & valid_name == 'Globigerinoides ruber subsp. ruber' ~ 'Mistake?',
+                                                   include & valid_name == 'Globigerinoides ruber subsp. ruber' ~ 'Globigerinoides ruber subsp. ruber',
                                                    TRUE ~ harmonised_name))
             }
           } else if(inAtlMed | maxAge == 2 | maxAge == 3){
