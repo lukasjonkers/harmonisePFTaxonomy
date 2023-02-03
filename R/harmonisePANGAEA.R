@@ -246,21 +246,21 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         # dutertrei in comment
         if(any(grepl('dutertrei', Meta$Comment[Meta$include & Meta$valid_name == 'Neogloboquadrina incompta']))){
           Meta <- Meta %>%
-            mutate(harmonised_name = case_when(include & valid_name == 'Neogloboquadrina incompta' & 'dutertrei' %in% Comment ~ 'Neogloboquadrina incompta + Neogloboquadrina dutertrei',
+            mutate(harmonised_name = case_when(include & valid_name == 'Neogloboquadrina incompta' & grepl('dutertrei', Comment) ~ 'Neogloboquadrina incompta + Neogloboquadrina dutertrei',
                                                TRUE ~ harmonised_name))
         }
         
         # incompta in comment
-        if(any(grepl('incompta', Meta$Comment[Meta$include & Meta$valid_name == 'Neogloboquadrina dutertrei']))){
+        if(any(grepl('incompta|dextral', Meta$Comment[Meta$include & Meta$valid_name == 'Neogloboquadrina dutertrei']))){
           Meta <- Meta %>%
-            mutate(harmonised_name = case_when(include & valid_name == 'Neogloboquadrina dutertrei' & 'incompta' %in% Comment ~ 'Neogloboquadrina incompta + Neogloboquadrina dutertrei',
+            mutate(harmonised_name = case_when(include & valid_name == 'Neogloboquadrina dutertrei' & grepl('incompta|dextral', Comment) ~ 'Neogloboquadrina incompta + Neogloboquadrina dutertrei',
                                                TRUE ~ harmonised_name))
         }
         
         # intergrade in comment
         if(any(grepl('intergrade', Meta$Comment[Meta$include & Meta$valid_name == 'Neogloboquadrina dutertrei']))){
           Meta <- Meta %>%
-            mutate(harmonised_name = case_when(include & valid_name == 'Neogloboquadrina dutertrei' & 'intergrade' %in% Comment ~ 'Neogloboquadrina incompta + Neogloboquadrina dutertrei',
+            mutate(harmonised_name = case_when(include & valid_name == 'Neogloboquadrina dutertrei' & grepl('intergrade', Comment) ~ 'Neogloboquadrina incompta + Neogloboquadrina dutertrei',
                                                TRUE ~ harmonised_name))
         }
         
