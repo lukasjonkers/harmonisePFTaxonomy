@@ -142,7 +142,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
             {suppressMessages(st_join(., GOAS))}
           
           # assume that if any event is within Atlantic or Mediterranean, the taxonomy will be sorted
-          inAtlMed <- any(oceanBasin$name %in% c('North Atlantic Ocean', 'South Atlantic Ocean', 'Mediterranean Region'))
+          inAtlMed <- any(oceanBasin$name %in% c('Arctic Ocean', 'North Atlantic Ocean', 'South Atlantic Ocean', 'Mediterranean Region'))
           
           # try to find an age column if not in Atlantic of Mediterranean and determine if max age is younger than ruber ruber extinction age in Indopacific
           maxAge <- if(!inAtlMed){ 
