@@ -320,9 +320,10 @@ harmonisePANGAEA <- function(url, tol = 0.02){
                                        select(any_of(c('Name', 'Unit', 'Method_Device', 'Comment', 'harmonised_name', 'harmonised_AphiaID'))) %>%
                                        replicate(nrow(pFile$data), ., simplify = FALSE) %>%
                                        bind_rows(),
-                                     pFile$data[, Meta$include] %>%
+                                     suppressMessages(pFile$data[, Meta$include] %>%
+                                       as_tibble(.name_repair = 'unique') %>%
                                        mutate(sampleID = 1:nrow(.)) %>%
-                                       pivot_longer(-sampleID, names_to = 'OriginalHeader', values_to = 'Value')
+                                       pivot_longer(-sampleID, names_to = 'OriginalHeader', values_to = 'Value'))
         )
         
         
