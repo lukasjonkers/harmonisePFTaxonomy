@@ -48,61 +48,118 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         # foram data
         PFData <- pFile$data[, Meta$isExtantPF]
         
+        # add include column to meta, will be checked below
+        Meta <- Meta %>%
+          mutate(include = case_when(isExtantPF ~ TRUE,
+                                     TRUE ~ FALSE)) 
+        
+        # check if there are columns that are the sum of two others
         # are the foram data numeric?
         if(all(map_lgl(PFData, is.numeric))){
           
-          #### remove columns that are the sum of two others (hopefully sums of three or more do not occur) ####
-          # first make names unique and remove columns with only 0s
-          PFDataUnique <- if(any(duplicated(names(PFData)))){
-            warning('Contains non-unique column names')
-            suppressMessages(PFData %>%
-                               as_tibble(.name_repair = 'unique'))
-          } else {
-            PFData
-          }
+          # summed columns can only be deleted if the two constituent columns are present, i.e. when there are three columns with the same name
+          # or when ruber, ruber subsp. albus and subsp. ruber are present
+          # or when sacculifer with and without sac have different genus names 
+        
+          possibleSums <- bind_rows(Meta %>%
+                      filter(isExtantPF) %>%
+                      group_by(valid_name) %>%
+                      summarise(n = n()) %>%
+                      filter(n == 3),
+                    Meta %>%
+                      filter(isExtantPF & grepl('ruber', valid_name)) %>%
+                      mutate(n = n()) %>%
+                      select(valid_name, n) %>%
+                      filter(n == 3),
+                    Meta %>%
+                      filter(isExtantPF, grepl('Trilobatus', valid_name)) %>%
+                      mutate(n = n()) %>%
+                      select(valid_name, n) %>%
+                      filter(n == 3)
+          )
           
-          # remove columns with only 0s
-          PFDataToCheck <- PFDataUnique %>%
-            select_if(~sum(.) != 0)
-          
-          # make df of all possible sums
-          PFDataSums <- setNames(data.frame(combn(1:ncol(PFDataToCheck), 2, function(i) rowSums(PFDataToCheck[i]))), 
-                                 combn(names(PFDataToCheck), 2, function(j) paste(j, collapse = ' + ')))
-          
-          # calculate absolute difference from raw data
-          PFDataDif <- lapply(PFDataToCheck, function(i) sapply(PFDataSums, function(j) Map(function(x, y) abs(x - y), i, j)))
-          
-          # which columns are sums of others?
-          spSummedAll <- map(PFDataDif, function(i) names(which(colSums(i < tol) == nrow(i)))) 
-          
-          spSummed <- spSummedAll[map_lgl(spSummedAll, ~length(.) > 0)]
-          
-          # if there are summed columns, show which and ask if they can be removed
-          # add include column to meta
-          Meta <- Meta %>%
-            mutate(include = case_when(isExtantPF ~ TRUE,
-                                       TRUE ~ FALSE)) 
-          
-          if(length(spSummed) != 0){
-            # check if columns appear sum of multiple pairs 
-            checkDupl <- map_lgl(spSummed, ~length(.) >1)
-            if(any(checkDupl)){
-              print(spSummed[checkDupl])
-              stop('Columns appear sums of mutiple pairs')
-            } else {
-              print(spSummed)
-              duplicateOK <- menu(c("Yes", "No"), title = "These columns appear summed. Continue without these?")
+          if(nrow(possibleSums) > 0){
+            sums <- map(possibleSums$valid_name, function(x){
+              sumindx <- which(Meta$valid_name[Meta$isExtantPF] %in% x)
               
-              if(duplicateOK == 1){
-                Meta <- Meta %>%
-                  group_by(isExtantPF) %>%
-                  mutate(include = ifelse(isExtantPF, !names(PFDataUnique) %in% names(spSummed), FALSE)) %>%
-                  ungroup() 
-              } else {
-                stop('What now?')
+              # check if only single col is not 0 (no action needed)
+              # then deal cases where one column that exist entirely of 0s (remove one of the remaining two when equal, last by default)
+              # then remove sums
+              if(sum(colSums(PFData[, sumindx]) == 0) <= 1){
+                if(colSums(PFData[, sumindx][,1]) == 0 & colSums(abs(PFData[, sumindx[2]] - PFData[, sumindx[3]]) < tol) == nrow(PFData)){
+                  sumindx[3]
+                } else if(colSums(PFData[, sumindx][,2]) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[3]]) < tol) == nrow(PFData)){
+                  sumindx[3]
+                } else if(colSums(PFData[, sumindx][,3]) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[2]]) < tol) == nrow(PFData)){
+                  sumindx[2]
+                } else if(colSums(PFData[, sumindx[1]] + PFData[, sumindx[2]] - PFData[, sumindx[3]] < tol) == nrow(PFData)){
+                  sumindx[3]
+                } else if(colSums(PFData[, sumindx[1]] + PFData[, sumindx[3]] - PFData[, sumindx[2]] < tol) == nrow(PFData)){
+                  sumindx[2]
+                } else if(colSums(PFData[, sumindx[2]] + PFData[, sumindx[3]] - PFData[, sumindx[1]] < tol) == nrow(PFData)){
+                  sumindx[1]
+                }
               }
-            }
+            })
+            
+            if(any(map_int(sums, length) != 0)){
+              Meta$include[Meta$isExtantPF][unlist(sums[map_int(sums, length) != 0])] <- FALSE
+              }
+            
           }
+          
+          # #### remove columns that are the sum of two others (hopefully sums of three or more do not occur) ####
+          # # first make names unique 
+          # PFDataUnique <- if(any(duplicated(names(PFData)))){
+          #   warning('Contains non-unique column names')
+          #   suppressMessages(PFData %>%
+          #                      as_tibble(.name_repair = 'unique'))
+          # } else {
+          #   PFData
+          # }
+          # 
+          # # remove columns with only 0s
+          # PFDataToCheck <- PFDataUnique %>%
+          #   select_if(~sum(.) != 0)
+          # 
+          # # make df of all possible sums
+          # PFDataSums <- setNames(data.frame(combn(1:ncol(PFDataToCheck), 2, function(i) rowSums(PFDataToCheck[i]))), 
+          #                        combn(names(PFDataToCheck), 2, function(j) paste(j, collapse = ' + ')))
+          # 
+          # # calculate absolute difference from raw data
+          # PFDataDif <- lapply(PFDataToCheck, function(i) sapply(PFDataSums, function(j) Map(function(x, y) abs(x - y), i, j)))
+          # 
+          # # which columns are sums of others?
+          # spSummedAll <- map(PFDataDif, function(i) names(which(colSums(i < tol) == nrow(i)))) 
+          # 
+          # spSummed <- spSummedAll[map_lgl(spSummedAll, ~length(.) > 0)]
+          # 
+          # # if there are summed columns, show which and ask if they can be removed
+          # # add include column to meta
+          # Meta <- Meta %>%
+          #   mutate(include = case_when(isExtantPF ~ TRUE,
+          #                              TRUE ~ FALSE)) 
+          # 
+          # if(length(spSummed) != 0){
+          #   # check if columns appear sum of multiple pairs 
+          #   checkDupl <- map_lgl(spSummed, ~length(.) >1)
+          #   if(any(checkDupl)){
+          #     print(spSummed[checkDupl])
+          #     stop('Columns appear sums of mutiple pairs')
+          #   } else {
+          #     print(spSummed)
+          #     duplicateOK <- menu(c("Yes", "No"), title = "These columns appear summed. Continue without these?")
+          #     
+          #     if(duplicateOK == 1){
+          #       Meta <- Meta %>%
+          #         group_by(isExtantPF) %>%
+          #         mutate(include = ifelse(isExtantPF, !names(PFDataUnique) %in% names(spSummed), FALSE)) %>%
+          #         ungroup() 
+          #     } else {
+          #       stop('What now?')
+          #     }
+          #   }
+          # }
           
           # catch a common case: menardii, known case that is often grouped with tumida
           # throw out the merged case when tumida is present
@@ -111,9 +168,9 @@ harmonisePANGAEA <- function(url, tol = 0.02){
                                        TRUE ~ include))
           
         } else {
-          Meta <- Meta %>%
-            mutate(include = case_when(isExtantPF ~ TRUE,
-                                       TRUE ~ FALSE))
+          # Meta <- Meta %>%
+          #   mutate(include = case_when(isExtantPF ~ TRUE,
+          #                              TRUE ~ FALSE))
           warning('Planktonic foraminifera abundance data are non-numeric. File not checked for summed categories.')
         }
         
@@ -309,8 +366,8 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           tolerancePercent <- 0.5
           checkPercent <- pFile$data[, Meta$include & Meta$Unit == '%']
           sums <- rowSums(checkPercent)
-          nFalse <- sum(!sums >= 100- tolerancePercent & sums <= 100 + tolerancePercent)
-          paste0(nFalse, ' samples out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
+          nFalse <- sum(!(sums >= 100 - tolerancePercent & sums <= 100 + tolerancePercent))
+          paste0(nFalse, ' sample(s) out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem(s) to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
         } else {
           'Units are not %%, cannot check.'
         }
