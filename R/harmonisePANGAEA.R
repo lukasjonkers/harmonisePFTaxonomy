@@ -181,9 +181,9 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           # if there is a match AND if the species occurs twice, then ask if remove is OK
           if(any(Meta$Unit[Meta$include] == '%')){
             # select PFdata with %%
-            excess <- rowSums(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%']) - 100
+            excess <- rowSums(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'], na.rm = TRUE) - 100
             # which species col is always within 0.5 % of the excess?
-            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] - excess) < 0.5) == nrow(PFData)
+            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] - excess) < 0.5, na.rm = TRUE) == nrow(PFData)
             if(any(iExcess)){
               # which species is this
               spExcess <- Meta$valid_name[Meta$include & Meta$Unit == '%'][iExcess]
@@ -399,7 +399,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           tolerancePercent <- 0.5
           checkPercent <- pFile$data[, Meta$include & Meta$Unit == '%']
           if(all(map_lgl(checkPercent, is.numeric))){
-            sums <- rowSums(checkPercent)
+            sums <- rowSums(checkPercent, na.rm = TRUE)
             nFalse <- sum(!(sums >= 100 - tolerancePercent & sums <= 100 + tolerancePercent))
             paste0(nFalse, ' sample(s) out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem(s) to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
           } else {
