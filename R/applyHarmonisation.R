@@ -3,6 +3,7 @@ library(tidyverse)
 library(googlesheets4)
 library(mregions)
 
+# Anne check
 
 # load the list with synonyms
 synsRaw <- range_read('https://docs.google.com/spreadsheets/d/1LSfU9WCZF22zMczZJUcS3ycVOpub8qS15TJtqMyIV8o/edit#gid=1394131465', sheet = 'synsWoRMS', col_types = 'cciccic')
@@ -41,13 +42,13 @@ urlNoFile <- 'https://doi.pangaea.de/10.1594/PANGAEA.846529'
 urlNoNum <- 'https://doi.pangaea.de/10.1594/PANGAEA.250099'
 
 source('R/harmonisePANGAEA.R')
-url <- urlDup
+url <- urls$url[15]
+url
+PFdat <- harmonisePANGAEA(url)
 
-harmonisePANGAEA(urls$url[202])
-
-
-
-
+print(PFdat$parameters, n = Inf)
+  
+PFdat$percentCheck
 
 
 
