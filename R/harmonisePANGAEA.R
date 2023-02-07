@@ -398,19 +398,29 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         pFileOut$percentCheck <- if(any(Meta$include & !is.na(Meta$Unit) & Meta$Unit == '%')){
           tolerancePercent <- 0.5
           checkPercent <- pFile$data[, Meta$include & Meta$Unit == '%']
-          sums <- rowSums(checkPercent)
-          nFalse <- sum(!(sums >= 100 - tolerancePercent & sums <= 100 + tolerancePercent))
-          paste0(nFalse, ' sample(s) out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem(s) to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
+          if(all(map_lgl(checkPercent, is.numeric))){
+            sums <- rowSums(checkPercent)
+            nFalse <- sum(!(sums >= 100 - tolerancePercent & sums <= 100 + tolerancePercent))
+            paste0(nFalse, ' sample(s) out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem(s) to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
+          } else {
+           'Data are not numeric, cannot check.' 
+          }
         } else {
           'Units are not %%, cannot check.'
         }
         # foraminifera data
+        # make columns consistent class
+        PFDataOut <- if(all(map_lgl(pFile$data[, Meta$include], is.numeric))){
+          pFile$data[, Meta$include]
+        } else {
+          map_df(pFile$data[, Meta$include], as.character)
+        }
         pFileOut$PFData <- bind_cols(Meta %>%
                                        filter(include) %>%
                                        select(any_of(c('Name', 'Unit', 'Method_Device', 'Comment', 'harmonised_name', 'harmonised_AphiaID'))) %>%
                                        replicate(nrow(pFile$data), ., simplify = FALSE) %>%
                                        bind_rows(),
-                                     suppressMessages(pFile$data[, Meta$include] %>%
+                                     suppressMessages(PFDataOut %>%
                                        as_tibble(.name_repair = 'unique') %>%
                                        mutate(sampleID = 1:nrow(.)) %>%
                                        pivot_longer(-sampleID, names_to = 'OriginalHeader', values_to = 'Value'))
@@ -421,7 +431,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         
         
       } else {
-        'Update list with valid taxa.'
+        stop('OK. Skip this file or update list with valid taxa.')
       }
     }
     
