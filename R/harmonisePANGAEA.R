@@ -167,6 +167,25 @@ harmonisePANGAEA <- function(url, tol = 0.02){
             mutate(include = case_when(include & valid_name == 'Globorotalia menardii' & grepl('tumida', Comment) & any('Globorotalia tumida' %in% Meta$valid_name[Meta$include]) ~ FALSE,
                                        TRUE ~ include))
           
+          # if percentages check if any species matches the mismatch from 100 %
+          # if there is a match AND if the species occurs twice, then ask if remove is OK
+          if(any(Meta$Unit[Meta$include] == '%')){
+            # select PFdata with %%
+            excess <- rowSums(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%']) - 100
+            # which species col is always within 0.5 % of the excess?
+            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] -excess) < 0.5) == nrow(PFData)
+            if(any(iExcess)){
+              # which species is this
+              spExcess <- Meta$valid_name[Meta$include & Meta$Unit == '%'][iExcess]
+              # is the excess species duplicated?
+              if(spExcess %in% Meta$valid_name[Meta$include][duplicated(Meta$valid_name[Meta$include])]){
+                askRed <- menu(c('Yes', 'No'), title = paste0(spExcess, ' (', names(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'])[iExcess], ') seems to be redundant. Remove?'))
+                if(askRed == 1){
+                  Meta$include[Meta$include & Meta$Unit == '%'][iExcess] <- FALSE
+                }
+              }
+            }
+          }
         } else {
           # Meta <- Meta %>%
           #   mutate(include = case_when(isExtantPF ~ TRUE,
