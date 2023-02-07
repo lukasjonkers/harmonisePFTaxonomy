@@ -19,8 +19,18 @@ harmonisePANGAEA <- function(url, tol = 0.02){
     if(all(is.na(MetaMatch$aphia))){
       stop('There seem to be no planktonic foraminifera abundance data in this file.')
     } else {
-      pFileWoRMS <- MetaMatch %>%
-        mutate(wm_record(aphia))
+      # worms API returns max 50 records
+      pFileWoRMS <- if(nrow(MetaMatch) <= 50){
+         MetaMatch %>%
+          mutate(wm_record(aphia))
+      } else {
+        # divide in chunks
+        chunks <- 1:ceiling(nrow(MetaMatch)/50)
+        map_df(chunks, function(x){
+          MetaMatch[rep(chunks, each = 50)[1:nrow(MetaMatch)] == x, ] %>%
+            mutate(wm_record(aphia))
+        })
+      }
     }
     
     # are there any planktonic foraminifera?
@@ -173,7 +183,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
             # select PFdata with %%
             excess <- rowSums(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%']) - 100
             # which species col is always within 0.5 % of the excess?
-            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] -excess) < 0.5) == nrow(PFData)
+            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] - excess) < 0.5) == nrow(PFData)
             if(any(iExcess)){
               # which species is this
               spExcess <- Meta$valid_name[Meta$include & Meta$Unit == '%'][iExcess]
@@ -211,7 +221,11 @@ harmonisePANGAEA <- function(url, tol = 0.02){
             tibble(Latitude = pFile$spatialcoverage$geo$latitude, Longitude = pFile$spatialcoverage$geo$longitude)
           } else if(any(grepl('Latitude|Longitude', pFile$parameters$Name))){
             pFile$data[, grepl('Latitude|Longitude', pFile$parameters$Name)]
-          } 
+          } else if(pFile$spatialcoverage$geo$`@type` == 'GeoShape'){
+            tem <- matrix(str_split_1(pFile$spatialcoverage$geo$box, pattern = ' '), ncol = 2, byrow = TRUE)
+            colnames(tem) <- c('Latitude', 'Longitude')
+            as_tibble(tem)
+          }
           
           oceanBasin <- geo %>%
             st_as_sf(., coords = c('Longitude', 'Latitude'), crs = 'wgs84') %>%
