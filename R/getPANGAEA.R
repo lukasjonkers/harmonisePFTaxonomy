@@ -6,6 +6,9 @@
 getPANGAEA <- function(url){
   require(tidyverse)
   require(httr2)
+  require(XML)
+  require(xml2)
+  
   # http request
   # build in token
   
@@ -40,39 +43,31 @@ getPANGAEA <- function(url){
       read_delim('\t', show_col_types = FALSE, name_repair = 'minimal')
     
     # get the metadata
-    metaJSON <- req %>%
-      req_headers("Accept" = "application/ld+json") %>%
+    metaXML <- req %>%
+      req_headers("Accept" = "application/vnd.pangaea.metadata+xml") %>%
       req_perform() %>%
-      resp_body_json()
+      resp_body_xml() %>%
+      xmlParse() %>%
+      xmlToList()
     
     # parameters: name, unit, method, comment, terms
-    parameters <- metaJSON$variableMeasured %>%
-      map_df(., function(x){
-        tibble(Name = x$name,
-               Unit = ifelse('unitText' %in% names(x), x$unitText, NA_character_),
-               Method_Device = ifelse('measurementTechnique' %in% names(x), x$measurementTechnique, NA_character_),
-               Comment = ifelse('description' %in% names(x), x$description, NA_character_),
-               URI = ifelse('url' %in% names(x), x$url, NA_character_),
-               Terms = ifelse('subjectOf' %in% names(x),
-                              if(any(map_lgl(x$subjectOf$hasDefinedTerm, is.list))){
-                                map_df(x$subjectOf$hasDefinedTerm, function(y){
-                                  tibble(Name = y$name,
-                                         URL = y$url)
-                                }) %>%
-                                  nest(Terms = everything())
-                              } else {
-                                tibble(Name = x$subjectOf$hasDefinedTerm$name,
-                                       URL = x$subjectOf$hasDefinedTerm$url) %>%
-                                  nest(Terms = everything())
-                              },
-                              list()
-               )
-               
-        )
-      })
-    
-    # check if OK
-    
+    parameters <- map_df(metaXML[names(metaXML) %in% 'matrixColumn'], function(x){
+      tibble(Name = x$parameter$name,
+             ShortName = x$parameter$shortName,
+             Unit = ifelse('unit' %in% names(x$parameter), x$parameter$unit, NA_character_),
+             # PI # sort out if needed
+             Method_Device = ifelse('method' %in% names(x), x$method$name, NA_character_),
+             Comment = ifelse('comment' %in% names(x), x$comment, NA_character_),
+             URI = ifelse('URI' %in% names(x$parameter), x$parameter$URI, NA_character_),
+             Terms = if('term' %in% names(x$parameter)){
+               list(x$parameter[names(x$parameter) %in% 'term'])
+             } else {
+               NULL
+             },
+             ID = x$`.attrs`[names(x$`.attrs`) %in% 'id'],
+             Caption = x$caption
+      )
+    })
     
     # citation
     citation <- req %>%
@@ -80,18 +75,25 @@ getPANGAEA <- function(url){
       req_perform() %>%
       resp_body_string()
     
+    # event(s)
+    events <- map_df(metaXML[names(metaXML) %in% 'event'], function(x){
+      tibble(Label = x$label,
+             Longitude = x$longitude,
+             Latitude = x$latitude,
+             Elevation = x$elevation)
+    })
+    
     # to add
-    # metaJSON$`@reverse` source information
-    # metaJSON$description
-    # metaJSON$astract # not sure if always available
+    # description
+    # abstract # not sure if always available
     
     # out
     list(data = data,
          parameters = parameters,
          citation = citation,
-         spatialcoverage = metaJSON$spatialCoverage,
-         url = metaJSON$url,
-         license = metaJSON$license)
+         event = events,
+         url = metaXML$citation$URI,
+         license = metaXML$license$label)
     
   } else {
     list(status = DatRespStatus)
