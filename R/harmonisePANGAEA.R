@@ -1,4 +1,4 @@
-harmonisePANGAEA <- function(url, tol = 0.02){
+harmonisePANGAEA <- function(url, tol = 0.1){
   require(tidyverse)
   require(sf)
   require(worrms)
@@ -98,9 +98,6 @@ harmonisePANGAEA <- function(url, tol = 0.02){
                                )
           
           possibleSums <- possibleSums[map_lgl(possibleSums, ~nrow(.) > 0)]
-          
-          
-          
           
           if(length(possibleSums) > 0){
             sums <- map(possibleSums, function(x){
@@ -407,7 +404,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         pFileOut <- pFile
         # updated meta
         pFileOut$parameters <- Meta %>%
-          select(any_of(c('Name', 'Unit', 'Method_Device', 'Comment', 'Terms', 'include', 'harmonised_name', 'harmonised_AphiaID')))
+          select(any_of(c('Name', 'Unit', 'Method_Device', 'Comment', 'Terms', 'include', 'ID', 'Caption', 'harmonised_name', 'harmonised_AphiaID')))
         # a check for relative abundances
         pFileOut$percentCheck <- if(any(Meta$include & !is.na(Meta$Unit) & Meta$Unit == '%')){
           tolerancePercent <- 0.5
@@ -431,7 +428,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         }
         pFileOut$PFData <- bind_cols(Meta %>%
                                        filter(include) %>%
-                                       select(any_of(c('Name', 'ShortName', 'Unit', 'Method_Device', 'Comment', 'ID', 'Caption', 'harmonised_name', 'harmonised_AphiaID'))) %>%
+                                       select(any_of(c('Name', 'ShortName', 'Unit', 'Method_Device', 'Comment', 'harmonised_name', 'harmonised_AphiaID'))) %>%
                                        replicate(nrow(pFile$data), ., simplify = FALSE) %>%
                                        bind_rows(),
                                      suppressMessages(PFDataOut %>%
