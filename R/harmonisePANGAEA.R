@@ -71,26 +71,40 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           # or when ruber, ruber subsp. albus and subsp. ruber are present
           # or when sacculifer with and without sac have different genus names 
         
-          possibleSums <- bind_rows(Meta %>%
-                      filter(isExtantPF) %>%
-                      group_by(valid_name) %>%
-                      summarise(n = n()) %>%
-                      filter(n == 3),
-                    Meta %>%
-                      filter(isExtantPF & grepl('ruber', valid_name)) %>%
-                      mutate(n = n()) %>%
-                      select(valid_name, n) %>%
-                      filter(n == 3),
-                    Meta %>%
-                      filter(isExtantPF, grepl('Trilobatus', valid_name)) %>%
-                      mutate(n = n()) %>%
-                      select(valid_name, n) %>%
-                      filter(n == 3)
-          )
+          possibleSums <- list(Meta %>%
+                                 filter(isExtantPF) %>%
+                                 group_by(valid_name) %>%
+                                 summarise(n = n()) %>%
+                                 filter(n == 3) %>%
+                                 distinct(valid_name),
+                               Meta %>%
+                                 filter(isExtantPF & grepl('ruber', valid_name)) %>%
+                                 mutate(n = n()) %>%
+                                 select(valid_name, n) %>%
+                                 filter(n == 3) %>%
+                                 distinct(valid_name),
+                               Meta %>%
+                                 filter(isExtantPF & grepl('pachyderma|incompta', valid_name)) %>%
+                                 mutate(n = n()) %>%
+                                 select(valid_name, n) %>%
+                                 filter(n == 3) %>%
+                                 distinct(valid_name),
+                               Meta %>%
+                                 filter(isExtantPF, grepl('Trilobatus', valid_name)) %>%
+                                 mutate(n = n()) %>%
+                                 select(valid_name, n) %>%
+                                 filter(n == 3) %>%
+                                 distinct(valid_name)
+                               )
           
-          if(nrow(possibleSums) > 0){
-            sums <- map(possibleSums$valid_name, function(x){
-              sumindx <- which(Meta$valid_name[Meta$isExtantPF] %in% x)
+          possibleSums <- possibleSums[map_lgl(possibleSums, ~nrow(.) > 0)]
+          
+          
+          
+          
+          if(length(possibleSums) > 0){
+            sums <- map(possibleSums, function(x){
+              sumindx <- which(Meta$valid_name[Meta$isExtantPF] %in% x$valid_name)
               
               # check if only single col is not 0 (no action needed)
               # then deal cases where one column that exist entirely of 0s (remove one of the remaining two when equal, last by default)
@@ -217,17 +231,17 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           # ruber ruber cannot occur outside the Atlantic or Mediterranean when the sample is younger than 120 ka
           
           # which ocean basin?
-          geo <- if(pFile$spatialcoverage$geo$`@type` == 'GeoCoordinates'){
-            tibble(Latitude = pFile$spatialcoverage$geo$latitude, Longitude = pFile$spatialcoverage$geo$longitude)
-          } else if(any(grepl('Latitude|Longitude', pFile$parameters$Name))){
-            pFile$data[, grepl('Latitude|Longitude', pFile$parameters$Name)]
-          } else if(pFile$spatialcoverage$geo$`@type` == 'GeoShape'){
-            tem <- matrix(str_split_1(pFile$spatialcoverage$geo$box, pattern = ' '), ncol = 2, byrow = TRUE)
-            colnames(tem) <- c('Latitude', 'Longitude')
-            as_tibble(tem)
-          }
+          # geo <- if(pFile$spatialcoverage$geo$`@type` == 'GeoCoordinates'){
+          #   tibble(Latitude = pFile$spatialcoverage$geo$latitude, Longitude = pFile$spatialcoverage$geo$longitude)
+          # } else if(any(grepl('Latitude|Longitude', pFile$parameters$Name))){
+          #   pFile$data[, grepl('Latitude|Longitude', pFile$parameters$Name)]
+          # } else if(pFile$spatialcoverage$geo$`@type` == 'GeoShape'){
+          #   tem <- matrix(str_split_1(pFile$spatialcoverage$geo$box, pattern = ' '), ncol = 2, byrow = TRUE)
+          #   colnames(tem) <- c('Latitude', 'Longitude')
+          #   as_tibble(tem)
+          # }
           
-          oceanBasin <- geo %>%
+          oceanBasin <- pFile$event %>%
             st_as_sf(., coords = c('Longitude', 'Latitude'), crs = 'wgs84') %>%
             {suppressMessages(st_join(., GOAS))}
           
@@ -401,7 +415,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
           if(all(map_lgl(checkPercent, is.numeric))){
             sums <- rowSums(checkPercent, na.rm = TRUE)
             nFalse <- sum(!(sums >= 100 - tolerancePercent & sums <= 100 + tolerancePercent))
-            paste0(nFalse, ' sample(s) out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), '%) seem(s) to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
+            paste0(nFalse, ' sample(s) out of ', length(sums), ' (', round(nFalse/length(sums)*100, 0), ' %) seem(s) to deviate from 100 % by more than 0.5 %. Max deviation: ', round(max(abs(sums - 100)), 1), ' %')
           } else {
            'Data are not numeric, cannot check.' 
           }
@@ -417,7 +431,7 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         }
         pFileOut$PFData <- bind_cols(Meta %>%
                                        filter(include) %>%
-                                       select(any_of(c('Name', 'Unit', 'Method_Device', 'Comment', 'harmonised_name', 'harmonised_AphiaID'))) %>%
+                                       select(any_of(c('Name', 'ShortName', 'Unit', 'Method_Device', 'Comment', 'ID', 'Caption', 'harmonised_name', 'harmonised_AphiaID'))) %>%
                                        replicate(nrow(pFile$data), ., simplify = FALSE) %>%
                                        bind_rows(),
                                      suppressMessages(PFDataOut %>%
@@ -434,9 +448,5 @@ harmonisePANGAEA <- function(url, tol = 0.02){
         stop('OK. Skip this file or update list with valid taxa.')
       }
     }
-    
-    
-    
-    
   }
 }
