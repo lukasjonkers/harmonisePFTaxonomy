@@ -113,18 +113,18 @@ harmonisePANGAEA <- function(url, tol = 0.1){
                   sumindx[3]
                 } else if(colSums(PFData[, sumindx][,3]) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[2]]) < tol) == nrow(PFData)){
                   sumindx[2]
-                } else if(colSums(PFData[, sumindx[1]] + PFData[, sumindx[2]] - PFData[, sumindx[3]] < tol) == nrow(PFData)){
+                } else if(colSums(abs(PFData[, sumindx[1]] + PFData[, sumindx[2]] - PFData[, sumindx[3]]) < tol) == nrow(PFData)){
                   sumindx[3]
-                } else if(colSums(PFData[, sumindx[1]] + PFData[, sumindx[3]] - PFData[, sumindx[2]] < tol) == nrow(PFData)){
+                } else if(colSums(abs(PFData[, sumindx[1]] + PFData[, sumindx[3]] - PFData[, sumindx[2]]) < tol) == nrow(PFData)){
                   sumindx[2]
-                } else if(colSums(PFData[, sumindx[2]] + PFData[, sumindx[3]] - PFData[, sumindx[1]] < tol) == nrow(PFData)){
+                } else if(colSums(abs(PFData[, sumindx[2]] + PFData[, sumindx[3]] - PFData[, sumindx[1]]) < tol) == nrow(PFData)){
                   sumindx[1]
                 }
               }
             })
             
             if(any(map_int(sums, length) != 0)){
-              Meta$include[Meta$isExtantPF][unlist(sums[map_int(sums, length) != 0])] <- FALSE
+              Meta$include[Meta$isExtantPF][unique(unlist(sums[map_int(sums, length) != 0]))] <- FALSE
               }
             
           }
