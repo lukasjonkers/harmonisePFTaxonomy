@@ -205,7 +205,7 @@ harmonisePANGAEA <- function(url, tol = 0.1){
             # select PFdata with %%
             excess <- rowSums(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'], na.rm = TRUE) - 100
             # which species col is always within 0.5 % of the excess?
-            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] - excess) < 0.5, na.rm = TRUE) == nrow(PFData)
+            iExcess <- colSums(abs(pFile$data[, Meta$include & Meta$isExtantPF & Meta$Unit == '%'] - excess) < tol, na.rm = TRUE) == nrow(PFData)
             if(any(iExcess)){
               # which species is this
               spExcess <- Meta$valid_name[Meta$include & Meta$Unit == '%'][iExcess]
