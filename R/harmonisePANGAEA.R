@@ -58,11 +58,6 @@ harmonisePANGAEA <- function(url, tol = 0.1){
         # foram data
         PFData <- pFile$data[, Meta$isExtantPF]
         
-        # replace NAs with 0s to be able to check for sums easily
-        if(any(is.na(PFData))){
-          PFData <- replace(PFData, is.na(PFData), 0)
-        }
-        
         # add include column to meta, will be checked below
         Meta <- Meta %>%
           mutate(include = case_when(isExtantPF ~ TRUE,
@@ -71,6 +66,11 @@ harmonisePANGAEA <- function(url, tol = 0.1){
         # check if there are columns that are the sum of two others
         # are the foram data numeric?
         if(all(map_lgl(PFData, is.numeric))){
+          
+          # replace NAs with 0s to be able to check for sums easily
+          if(any(is.na(PFData))){
+            PFData <- replace(PFData, is.na(PFData), 0)
+          }
           
           # summed columns can only be deleted if the two constituent columns are present, i.e. when there are three columns with the same name
           # or when ruber, ruber subsp. albus and subsp. ruber are present
