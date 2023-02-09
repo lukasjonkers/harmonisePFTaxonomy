@@ -58,6 +58,11 @@ harmonisePANGAEA <- function(url, tol = 0.1){
         # foram data
         PFData <- pFile$data[, Meta$isExtantPF]
         
+        # replace NAs with 0s to be able to check for sums easily
+        if(any(is.na(PFData))){
+          PFData <- replace(PFData, is.na(PFData), 0)
+        }
+        
         # add include column to meta, will be checked below
         Meta <- Meta %>%
           mutate(include = case_when(isExtantPF ~ TRUE,
@@ -97,6 +102,12 @@ harmonisePANGAEA <- function(url, tol = 0.1){
                                  distinct(valid_name)
                                )
           
+          # make sure each "group" has its own list element
+          possibleSums <- if(nrow(possibleSums[[1]])>1){
+            unname(c(split(possibleSums[[1]], 1:nrow(possibleSums[[1]])), possibleSums[2:4]))
+          }
+          
+          # filter out empty elements
           possibleSums <- possibleSums[map_lgl(possibleSums, ~nrow(.) > 0)]
           
           if(length(possibleSums) > 0){
@@ -106,18 +117,18 @@ harmonisePANGAEA <- function(url, tol = 0.1){
               # check if only single col is not 0 (no action needed)
               # then deal cases where one column that exist entirely of 0s (remove one of the remaining two when equal, last by default)
               # then remove sums
-              if(sum(colSums(PFData[, sumindx]) == 0) <= 1){
-                if(colSums(PFData[, sumindx][,1]) == 0 & colSums(abs(PFData[, sumindx[2]] - PFData[, sumindx[3]]) < tol) == nrow(PFData)){
+              if(sum(colSums(PFData[, sumindx], na.rm = TRUE) == 0) <= 1){
+                if(colSums(PFData[, sumindx][,1], na.rm = TRUE) == 0 & colSums(abs(PFData[, sumindx[2]] - PFData[, sumindx[3]]) < tol, na.rm = TRUE) == nrow(PFData)){
                   sumindx[3]
-                } else if(colSums(PFData[, sumindx][,2]) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[3]]) < tol) == nrow(PFData)){
+                } else if(colSums(PFData[, sumindx][,2], na.rm = TRUE) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[3]]) < tol, na.rm = TRUE) == nrow(PFData)){
                   sumindx[3]
-                } else if(colSums(PFData[, sumindx][,3]) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[2]]) < tol) == nrow(PFData)){
+                } else if(colSums(PFData[, sumindx][,3], na.rm = TRUE) == 0 & colSums(abs(PFData[, sumindx[1]] - PFData[, sumindx[2]]) < tol, na.rm = TRUE) == nrow(PFData)){
                   sumindx[2]
-                } else if(colSums(abs(PFData[, sumindx[1]] + PFData[, sumindx[2]] - PFData[, sumindx[3]]) < tol) == nrow(PFData)){
+                } else if(colSums(abs(PFData[, sumindx[1]] + PFData[, sumindx[2]] - PFData[, sumindx[3]]) < tol, na.rm = TRUE) == nrow(PFData)){
                   sumindx[3]
-                } else if(colSums(abs(PFData[, sumindx[1]] + PFData[, sumindx[3]] - PFData[, sumindx[2]]) < tol) == nrow(PFData)){
+                } else if(colSums(abs(PFData[, sumindx[1]] + PFData[, sumindx[3]] - PFData[, sumindx[2]]) < tol, na.rm = TRUE) == nrow(PFData)){
                   sumindx[2]
-                } else if(colSums(abs(PFData[, sumindx[2]] + PFData[, sumindx[3]] - PFData[, sumindx[1]]) < tol) == nrow(PFData)){
+                } else if(colSums(abs(PFData[, sumindx[2]] + PFData[, sumindx[3]] - PFData[, sumindx[1]]) < tol, na.rm = TRUE) == nrow(PFData)){
                   sumindx[1]
                 }
               }
