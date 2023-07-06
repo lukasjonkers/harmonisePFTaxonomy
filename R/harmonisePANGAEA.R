@@ -142,59 +142,6 @@ harmonisePANGAEA <- function(url, tol = 0.1){
             
           }
           
-          # #### remove columns that are the sum of two others (hopefully sums of three or more do not occur) ####
-          # # first make names unique 
-          # PFDataUnique <- if(any(duplicated(names(PFData)))){
-          #   warning('Contains non-unique column names')
-          #   suppressMessages(PFData %>%
-          #                      as_tibble(.name_repair = 'unique'))
-          # } else {
-          #   PFData
-          # }
-          # 
-          # # remove columns with only 0s
-          # PFDataToCheck <- PFDataUnique %>%
-          #   select_if(~sum(.) != 0)
-          # 
-          # # make df of all possible sums
-          # PFDataSums <- setNames(data.frame(combn(1:ncol(PFDataToCheck), 2, function(i) rowSums(PFDataToCheck[i]))), 
-          #                        combn(names(PFDataToCheck), 2, function(j) paste(j, collapse = ' + ')))
-          # 
-          # # calculate absolute difference from raw data
-          # PFDataDif <- lapply(PFDataToCheck, function(i) sapply(PFDataSums, function(j) Map(function(x, y) abs(x - y), i, j)))
-          # 
-          # # which columns are sums of others?
-          # spSummedAll <- map(PFDataDif, function(i) names(which(colSums(i < tol) == nrow(i)))) 
-          # 
-          # spSummed <- spSummedAll[map_lgl(spSummedAll, ~length(.) > 0)]
-          # 
-          # # if there are summed columns, show which and ask if they can be removed
-          # # add include column to meta
-          # Meta <- Meta %>%
-          #   mutate(include = case_when(isExtantPF ~ TRUE,
-          #                              TRUE ~ FALSE)) 
-          # 
-          # if(length(spSummed) != 0){
-          #   # check if columns appear sum of multiple pairs 
-          #   checkDupl <- map_lgl(spSummed, ~length(.) >1)
-          #   if(any(checkDupl)){
-          #     print(spSummed[checkDupl])
-          #     stop('Columns appear sums of mutiple pairs')
-          #   } else {
-          #     print(spSummed)
-          #     duplicateOK <- menu(c("Yes", "No"), title = "These columns appear summed. Continue without these?")
-          #     
-          #     if(duplicateOK == 1){
-          #       Meta <- Meta %>%
-          #         group_by(isExtantPF) %>%
-          #         mutate(include = ifelse(isExtantPF, !names(PFDataUnique) %in% names(spSummed), FALSE)) %>%
-          #         ungroup() 
-          #     } else {
-          #       stop('What now?')
-          #     }
-          #   }
-          # }
-          
           # catch a common case: menardii, known case that is often grouped with tumida
           # throw out the merged case when tumida is present
           Meta <- Meta %>%
@@ -241,16 +188,6 @@ harmonisePANGAEA <- function(url, tol = 0.1){
           # ruber ruber cannot occur outside the Atlantic or Mediterranean when the sample is younger than 120 ka
           
           # which ocean basin?
-          # geo <- if(pFile$spatialcoverage$geo$`@type` == 'GeoCoordinates'){
-          #   tibble(Latitude = pFile$spatialcoverage$geo$latitude, Longitude = pFile$spatialcoverage$geo$longitude)
-          # } else if(any(grepl('Latitude|Longitude', pFile$parameters$Name))){
-          #   pFile$data[, grepl('Latitude|Longitude', pFile$parameters$Name)]
-          # } else if(pFile$spatialcoverage$geo$`@type` == 'GeoShape'){
-          #   tem <- matrix(str_split_1(pFile$spatialcoverage$geo$box, pattern = ' '), ncol = 2, byrow = TRUE)
-          #   colnames(tem) <- c('Latitude', 'Longitude')
-          #   as_tibble(tem)
-          # }
-          
           oceanBasin <- pFile$event %>%
             st_as_sf(., coords = c('Longitude', 'Latitude'), crs = 'wgs84') %>%
             {suppressMessages(st_join(., GOAS))}

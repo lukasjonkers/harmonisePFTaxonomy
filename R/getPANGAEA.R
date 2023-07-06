@@ -1,6 +1,13 @@
 # function to get data from PANGAEA using http
-# does not handle parents and only works for data set DOI with data as tab delimited text (yet)
-# this can probably be sorted by looking at the xml
+# currently returns:
+#   a tible with the parsed parameter information
+#   the citation of the data
+#   an overview of the individual events (geoinformation)
+#   the url where the data are found
+#   the license
+#   a tiblle with the data
+
+# does not handle parent urls yet, but this can be sorted by looking at the xml
 # does not include authorisation yet
 
 getPANGAEA <- function(url){
