@@ -3,24 +3,14 @@ library(tidyverse)
 library(googlesheets4)
 library(mregions)
 
-# Anne check
-
 # load the list with synonyms
-synsRaw <- range_read('https://docs.google.com/spreadsheets/d/1LSfU9WCZF22zMczZJUcS3ycVOpub8qS15TJtqMyIV8o/edit#gid=1394131465', sheet = 'synsWoRMS', col_types = 'cciccic')
-
-# merge proposed names
-# remove names without aphia
-synonyms <- synsRaw %>%
-  mutate(aphia = case_when(!is.na(proposedaphia) ~ proposedaphia,
-                           TRUE ~ aphia),
-         scientificname = case_when(!is.na(proposedname) ~ proposedname,
-                                    TRUE ~ scientificname)) %>%
-  drop_na(aphia) %>%
-  select(Name, aphia, scientificname) %>%
-  distinct()
+# this is an intermediate solution as PANGAEA does not have aphiaIDs for all foraminifera entries
+synonyms <- read_csv('data/synonyms.csv')
 
 # valid extant planktonic foraminifera taxa
-extantForams <- range_read('https://docs.google.com/spreadsheets/d/1LSfU9WCZF22zMczZJUcS3ycVOpub8qS15TJtqMyIV8o/edit#gid=1394131465', sheet = 'extForam')
+# this list is short and needs manual curation. It is just to assess which taxa to work with, all other taxa are ignored. Future updates may include functionality for
+# extinct taxa too
+extantForams <- read_csv('data/extantForams.csv')
 
 # load the Global Oceans and Seas shape file to assign site to ocean basin
 # citation Flanders Marine Institute (2021). Global Oceans and Seas, version 1. Available online at https://www.marineregions.org/. https://doi.org/10.14284/542.
@@ -29,26 +19,8 @@ GOAS <- mr_shp(key = "MarineRegions:goas", maxFeatures = 25)
 # turn off spherical projections
 sf::sf_use_s2(FALSE)
 
-# urls with data to work with
-urls <- read_csv('data/_https_doi_pangaea_ds_id_dataset_text.csv', col_names = 'url')
-
-
-# example with duplicate names
-urlDup <- 'https://doi.pangaea.de/10.1594/PANGAEA.55758' # Huels
-urlOK <- urls$url[1]
-urlAge <- 'https://doi.pangaea.de/10.1594/PANGAEA.114682'
-urlNoForam <- 'https://doi.pangaea.de/10.1594/PANGAEA.947262'
-urlNoFile <- 'https://doi.pangaea.de/10.1594/PANGAEA.846529'
-urlNoNum <- 'https://doi.pangaea.de/10.1594/PANGAEA.250099'
-
 source('R/harmonisePANGAEA.R')
-url <- urls$url[15]
-url
-PFdat <- harmonisePANGAEA(url)
 
-print(PFdat$parameters, n = Inf)
-  
-PFdat$percentCheck
+exampleUrl <- 'https://doi.pangaea.de/10.1594/PANGAEA.112391'
 
-
-
+harmonisePANGAEA(exampleUrl)

@@ -37,7 +37,7 @@ harmonisePANGAEA <- function(url, tol = 0.1){
     if(nrow(pFile$parameters) == pFileWoRMS %>%
        filter(!valid_name %in% extantForams$isExtantFORAM) %>%
        nrow()){
-      stop('There seem to be no planktonic foraminifera abundance data in this file. Either this is real or the taxa in this file are not in the list of valid taxa.')
+      stop('There seem to be no extant planktonic foraminifera abundance data in this file. Either this is real or the taxa in this file are not in the list of valid taxa.')
     } else{
       
       # filter which are extant planktonic foraminifera
@@ -75,7 +75,9 @@ harmonisePANGAEA <- function(url, tol = 0.1){
           # summed columns can only be deleted if the two constituent columns are present, i.e. when there are three columns with the same name
           # or when ruber, ruber subsp. albus and subsp. ruber are present
           # or when sacculifer with and without sac have different genus names 
-        
+          
+          # some data sets contain the data in different units, this is not considered here
+          
           possibleSums <- list(Meta %>%
                                  filter(isExtantPF) %>%
                                  group_by(valid_name) %>%
@@ -444,8 +446,8 @@ harmonisePANGAEA <- function(url, tol = 0.1){
                                        bind_rows(),
                                      suppressMessages(PFDataOut %>%
                                        as_tibble(.name_repair = 'unique') %>%
-                                       mutate(sampleID = 1:nrow(.)) %>%
-                                       pivot_longer(-sampleID, names_to = 'OriginalHeader', values_to = 'Value'))
+                                       mutate(rowNumber = 1:nrow(.)) %>%
+                                       pivot_longer(-rowNumber, names_to = 'OriginalHeader', values_to = 'Value'))
         )
         
         
