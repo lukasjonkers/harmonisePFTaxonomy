@@ -11,6 +11,10 @@
 # does not include authorisation yet
 
 getPANGAEA <- function(url){
+  pckgs <- c('tidyverse', 'httr2', 'XML', 'xml2')
+  not_installed <- pckgs[!(pckgs %in% installed.packages()[ , 'Package'])]
+  if(length(not_installed)) install.packages(not_installed)
+  
   require(tidyverse)
   require(httr2)
   require(XML)
@@ -21,7 +25,6 @@ getPANGAEA <- function(url){
   
   # http request, repeats max three times. Handles "Too many requests (code 429) automatically
   req <- request(url) %>%
-    # req_user_agent("Lukas Jonkers") %>%
     req_retry(max_tries = 3)
   
   # perform the request

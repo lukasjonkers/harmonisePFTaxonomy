@@ -1,16 +1,24 @@
 harmonisePANGAEA <- function(url, tol = 0.1){
+  pckgs <- c('tidyverse', 'sf', 'worrms', 'mregions')
+  not_installed <- pckgs[!(pckgs %in% installed.packages()[ , 'Package'])]
+  if(length(not_installed)) install.packages(not_installed)
+  
   require(tidyverse)
   require(sf)
   require(worrms)
+  require(mregions)
   
   # load and parse data and metadata
-  source('R/getPANGAEA.R')
+  source('R/getPANGAEA.R', local = TRUE)
   pFile <- getPANGAEA(url)
   
   # check if success
   if('status' %in% names(pFile)){
     stop(paste0('Cannot read PANGAEA url (landing page or unauthorised?). Status: ', pFile$status))
   } else{
+    # read the synonym list
+    synonyms <- suppressMessages(read_csv('data/synonyms.csv'))
+    
     # match Names with aphia
     MetaMatch <- pFile$parameters %>%
       mutate(aphia = synonyms$aphia[match(Name, synonyms$Name)])
@@ -34,6 +42,9 @@ harmonisePANGAEA <- function(url, tol = 0.1){
     }
     
     # are there any planktonic foraminifera?
+    # read the file with extant planktonic foraminifera taxa
+    extantForams <- suppressMessages(read_csv('data/extantForams.csv'))
+    
     if(nrow(pFile$parameters) == pFileWoRMS %>%
        filter(!valid_name %in% extantForams$isExtantFORAM) %>%
        nrow()){
@@ -188,11 +199,22 @@ harmonisePANGAEA <- function(url, tol = 0.1){
           # ruber ruber cannot occur outside the Atlantic or Mediterranean when the sample is younger than 120 ka
           
           # which ocean basin?
+          # if not already done, load the Global Oceans and Seas shape file to assign site to ocean basin
+          # citation Flanders Marine Institute (2021). Global Oceans and Seas, version 1. Available online at https://www.marineregions.org/. https://doi.org/10.14284/542.
+          if(!exists(x = 'GOAS')){
+            GOAS <- mr_shp(key = "MarineRegions:goas", maxFeatures = 25)
+            assign('GOAS', GOAS, envir = globalenv())
+          }
+          
+          # turn off spherical projections
+          sf::sf_use_s2(FALSE)
+          
+          # find the ocean basin where the event(s) is/are from
           oceanBasin <- pFile$event %>%
             st_as_sf(., coords = c('Longitude', 'Latitude'), crs = 'wgs84') %>%
             {suppressMessages(st_join(., GOAS))}
           
-          # assume that if any event is within Atlantic or Mediterranean, the taxonomy will be sorted
+          # assume that if any event is within Arctic, Atlantic or Mediterranean, the taxonomy will be sorted
           inAtlMed <- any(oceanBasin$name %in% c('Arctic Ocean', 'North Atlantic Ocean', 'South Atlantic Ocean', 'Mediterranean Region'))
           
           # try to find an age column if not in Atlantic of Mediterranean and determine if max age is younger than ruber ruber extinction age in Indopacific
