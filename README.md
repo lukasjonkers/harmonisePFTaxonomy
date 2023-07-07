@@ -22,4 +22,4 @@ harmonisePANGAEA(exampleUrl)
 
 The `getPANGAEA()` function uses http to retrieve the data from PANGAEA and returns a list with parsed metadata and data associated with a dataset (called using a URL). The function is called within `harmonisePANGAEA()`.
 
-This harmonisation pipeline was produced with financial support from the [NFDI4Earth](https://www.nfdi4earth.de) within the 2022 pilot project "Reusability of Data with Complex Semantic Structure".
+This harmonisation pipeline was produced with financial support from the [NFDI4Earth](https://www.nfdi4earth.de) within the 2022-2023 [pilot project](https://www.nfdi4earth.de/2participate/pilots) "Reusability of Data with Complex Semantic Structure".
