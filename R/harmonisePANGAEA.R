@@ -204,6 +204,8 @@ harmonisePANGAEA <- function(url, tol = 0.1){
           if(!exists(x = 'GOAS')){
             GOAS <- mr_shp(key = "MarineRegions:goas", maxFeatures = 25)
             assign('GOAS', GOAS, envir = globalenv())
+            # clear cache
+            unlink(list.files(rappdirs::user_cache_dir("mregions"), include.dirs = TRUE, full.names = TRUE), recursive = TRUE)
           }
           
           # turn off spherical projections
